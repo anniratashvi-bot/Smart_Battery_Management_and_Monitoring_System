@@ -58,9 +58,3 @@ The number of cells is controlled using the compile-time constant:
 
 ```cpp
 const int MAX_CELLS =4;
-### Commit message
-
-Use:
-
-```text
-Update project documentation and overview
