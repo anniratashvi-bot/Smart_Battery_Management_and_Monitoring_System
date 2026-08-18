@@ -103,6 +103,15 @@ The Wokwi Serial Monitor output screenshot is included in the `screenshots` dire
 
 Wokwi simulation link:https://wokwi.com/projects/471623147263209473
 
+## Scalability: 4 Cells to 16 Cells
+
+The BMS engine uses the same `Cell` data structure and monitoring logic for different battery pack sizes. The number of cells is controlled using the `MAX_CELLS` compile-time constant.
+
+For a 4-cell configuration:
+
+```cpp
+const int MAX_CELLS = 16;
+
 
 ## Task Status
 
