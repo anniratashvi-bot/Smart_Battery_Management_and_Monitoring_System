@@ -97,14 +97,13 @@ The simulation output was used as evidence during development and testing.
 
 ## Project Evidence
 
-Testing screenshots will be added to the `screenshots` directory after the corresponding Wokwi tests are completed.
+The Wokwi Serial Monitor output screenshot is included in the `screenshots` directory as evidence of the Task 1 simulation and testing.
 
 ## Wokwi Simulation
 
-Wokwi simulation link:
+Wokwi simulation link:https://wokwi.com/projects/471623147263209473
 
-**To be added after the final simulation is saved and shared.**
 
 ## Task Status
 
-Task 1 focuses on establishing the modular BMS engine that will serve as a foundation for the remaining battery management and monitoring functions developed during the internship.
+Task 1 focuses on establishing the modular BMS engine that will serve as a foundation for the remaining battery management and monitoring functions developed .
