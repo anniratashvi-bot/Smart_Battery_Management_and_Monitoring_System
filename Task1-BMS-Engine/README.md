@@ -1,5 +1,3 @@
-# Task 1 - Modular Battery Management Engine
-
 ## Objective
 The objective of this task was to develop a modular Battery Management System (BMS) engine for monitoring multiple battery cells using a scalable architecture. The number of cells should be controlled from a single compile-time constant without requiring the monitoring logic to be rewritten for each battery configuration.
 The engine is responsible for identifying the weakest and strongest cells, calculating cell voltage imbalance, monitoring the imbalance trend over time and using an adaptive imbalance threshold based on battery State of Charge (SoC). The calculated battery information is also made available to other parts of the BMS so that the same analysis does not have to be duplicated.
