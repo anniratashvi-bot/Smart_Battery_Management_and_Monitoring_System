@@ -1,37 +1,276 @@
-### Objective
+## Objective
+The objective of this task was to develop an LCD display engine that updates only the information that has changed, avoiding unnecessary screen clearing and visible flickering.The display also needs to rotate automatically through multiple information pages using non-blocking timing. During a critical fault, the normal display must be overridden by a dedicated fault screen until the fault is explicitly cleared.
 
-To develop an optimized LCD display engine for the BMS that reduces unnecessary display updates and visible flickering. The LCD should automatically rotate between different information pages using a non-blocking timer and should immediately display a dedicated fault screen whenever a critical battery fault is detected.
+## Display Hardware
 
-### Implementation
+The LCD used in the Wokwi simulation is:
 
-A 16x2 I2C LCD was integrated with the existing ESP32-based BMS. The LCD was programmed to display three different information pages:
+* 16x2 I2C LCD
+* I2C address: `0x27`
+* SDA: GPIO 21
+* SCL: GPIO 22
 
-1. Battery Status – displays average State of Charge (SoC) and State of Health (SoH).
-2. System State – displays the relay state, number of cells and fault status.
-3. Telemetry – displays minimum and maximum cell voltage, voltage imbalance and average SoC.
+The I2C interface is initialized using:
 
-The pages are automatically changed every 3 seconds using `millis()`. This allows the display to rotate between pages without using blocking delays.
+```cpp
+Wire.begin(21, 22);
+```
 
-To reduce unnecessary LCD operations, the previous contents of both LCD rows are stored. A row is rewritten only when its displayed value changes. This reduces unnecessary screen updates and helps prevent visible flickering.
+The LCD is created as:
 
-A critical fault override was also implemented. When a serious fault such as overheat, overvoltage, undervoltage or a sensor anomaly is detected, the normal LCD pages are stopped and a dedicated critical fault screen is displayed.
+```cpp
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+```
 
-### Critical Fault Testing
+## Display Pages
 
-The critical fault functionality was tested in the Wokwi simulation by temporarily setting the cell temperature to `50.0°C`. The configured maximum temperature is `45.0°C`, so this caused an overheat condition.
+The normal display rotates through three pages.
 
-The LCD immediately switched to the critical fault display and showed:
+### 1. Battery Status Page
 
-`!! CRITICAL !!`
+The battery page provides an overview of the battery condition.
 
-`CELL 1 OVERHEAT`
+It displays:
 
-After completing the test, the temperature was restored to `25.0°C` and normal LCD operation was verified.
+* Average SoC
+* Average SoH
 
-### Refresh Interval Justification
+Example:
 
-A LCD refresh interval of `250 ms` was selected because the information displayed by the BMS does not need extremely fast visual updates. A 250 ms interval provides sufficiently responsive information while avoiding unnecessary repeated writes to the LCD. The page rotation interval of 3 seconds provides enough time for each page to be read before changing to the next page.
+```text
+BATTERY STATUS
+SOC:78% SOH:100%
+```
 
-### Result
+### 2. System Status Page
 
-The LCD successfully displayed all three information pages and automatically rotated between them. The display was updated without continuously clearing the screen, reducing unnecessary updates and visible flickering. The critical fault override was also successfully tested using the simulated overheat condition.
+The system page shows the relay condition, number of cells, and whether a cell fault is present.
+
+Example:
+
+```text
+SYSTEM: NORMAL
+CELLS:4 FAULT:NO
+```
+
+The relay status can also show:
+
+```text
+SYSTEM: TRIPPED
+```
+
+or:
+
+```text
+SYSTEM: RECOVERY
+```
+
+### 3. Telemetry Page
+
+The telemetry page displays the minimum and maximum cell voltage together with voltage imbalance and average SoC.
+
+Example:
+
+```text
+MIN:3.80 MAX:3.88
+IMB:80mV SOC:78
+```
+
+## Non-Blocking Page Rotation
+
+The LCD pages are rotated without using `delay()`.
+
+The page rotation interval is:
+
+```cpp
+const unsigned long pageInterval = 3000;
+```
+
+The code checks elapsed time using `millis()`:
+
+```cpp
+if(currentTime-lastPageChange>=pageInterval)
+{
+    lastPageChange=currentTime;
+    currentPage++;
+
+    if(currentPage>=3)
+        currentPage=0;
+}
+```
+
+This allows the ESP32 to continue running the BMS analysis, protection logic, telemetry, and communication handling while the display changes pages.
+
+## Flicker-Free Rendering
+
+The display engine does not repeatedly clear and redraw the complete LCD.
+
+Instead, it stores the previously displayed contents of each row:
+
+```cpp
+String previousRow0 = "";
+String previousRow1 = "";
+```
+
+The `updateLCDRow()` function compares the new text with the previous text.
+
+```cpp
+if(text!=previousRow0)
+{
+    lcd.setCursor(0,0);
+    lcd.print(text);
+    previousRow0=text;
+}
+```
+
+The same approach is used for the second row.
+
+A row is therefore written only when its content changes. This reduces unnecessary LCD writes and avoids the visible flickering caused by repeatedly clearing and rewriting the display.
+
+## Display Refresh Interval
+
+The display update check uses:
+
+```cpp
+const unsigned long lcdRefreshInterval = 250;
+```
+
+The display is therefore checked every 250 ms, while the actual page changes every 3 seconds.
+
+The refresh interval provides enough responsiveness for battery and fault information while avoiding unnecessary continuous LCD writes.
+
+## Critical Fault Override
+
+Critical battery and sensor faults have priority over the normal page rotation.
+
+The function:
+
+```cpp
+checkLCDCriticalFault();
+```
+
+checks for conditions including:
+
+* Overheat
+* Overvoltage
+* Undervoltage
+* Frozen sensor
+* Unrealistic sensor value
+
+When a critical fault is detected, the normal pages are replaced by a dedicated fault screen.
+
+Example:
+
+```text
+!! CRITICAL !!
+CELL 1 OVERHEAT
+```
+
+Other fault messages can include:
+
+```text
+CELL 1 OVERVOLT
+```
+
+```text
+CELL 1 UNDERVOLT
+```
+
+```text
+CELL 1 SENSOR
+```
+
+```text
+CELL 1 INVALID
+```
+
+The fault page remains active while `lcdFaultActive` is set.
+
+## Explicit Fault Clearing
+
+The LCD fault display is not allowed to disappear simply because the normal page timer expires.
+
+The fault must be cleared using the explicit clear command:
+
+```text
+C
+```
+
+The `clearLCDFault()` function first checks that critical and battery faults are no longer active.
+
+If a fault is still present, the system refuses to clear the display:
+
+```text
+Fault still active - cannot clear
+```
+
+This prevents the LCD from returning to normal while an unsafe condition still exists.
+
+## Display Update Flow
+
+The display logic can be summarized as:
+
+```text
+                Start LCD Update
+                       │
+                       ▼
+               Critical fault?
+                 /          \
+               Yes           No
+                │             │
+                ▼             ▼
+          Fault Display   Check page timer
+                              │
+                              ▼
+                     Select current page
+                              │
+                              ▼
+                     Update changed rows
+```
+
+A critical fault therefore has priority over normal page rotation.
+
+## Testing and Validation
+
+The LCD engine was developed and tested in Wokwi together with the rest of the BMS.
+
+Testing covered:
+
+* LCD initialization
+* I2C communication
+* Battery status page
+* System status page
+* Telemetry page
+* Automatic page rotation
+* Non-blocking refresh
+* Row-change detection
+* Flicker-free updates
+* Critical fault override
+* Fault message display
+* Explicit fault clearing
+* Continued LCD operation while other BMS functions are running
+
+## Observed Operation
+
+During normal operation, the LCD rotates between the three information pages without blocking the main BMS loop.
+
+During a fault condition, the normal page is immediately replaced by the critical-fault display.
+
+After the fault is cleared and the explicit clear command is issued, the LCD fault state is removed and normal page rotation resumes.
+
+## Development Environment
+
+| Item                 | Details      |
+| -------------------- | ------------ |
+| Microcontroller      | ESP32        |
+| Programming Language | C++          |
+| Framework            | Arduino      |
+| Display              | 16x2 I2C LCD |
+| I2C Address          | `0x27`       |
+| SDA                  | GPIO 21      |
+| SCL                  | GPIO 22      |
+| Simulation           | Wokwi        |
+
+## Task Status
+
+Task 3 is completed and integrated into the main BMS system. The LCD engine continues to operate alongside the protection, state-machine, telemetry, and analytics functions without using blocking delays.
