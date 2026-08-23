@@ -1,5 +1,3 @@
-# Task 2 - Non-Blocking Protection Relay and Safety System
-
 ## Objective
 The objective of this task was to develop a non-blocking battery protection system that can detect unsafe battery conditions, control a protection relay and recover safely after a fault is cleared.The implementation avoids blocking `delay()` calls and uses timer- and state-based logic so that battery monitoring, fault detection, LCD updates, telemetry and communication handling can continue while the protection system is active.The task also required anti-chatter protection, sensor anomaly detection, distinction between genuine rapid changes and abnormal readings and a timed relay recovery sequence.
 
