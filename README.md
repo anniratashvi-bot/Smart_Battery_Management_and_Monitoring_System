@@ -105,3 +105,7 @@ The tests were monitored using both the Serial Monitor and the Blynk dashboard.
 
 The current implementation was developed and validated in simulation. Future improvements could include testing with physical battery cells and dedicated battery-monitoring hardware, improving SoC estimation methods, and extending the system to larger battery packs.
 
+## Author
+
+** A Tashvi Prasad**  
+Electronics and Communication Engineering Student
