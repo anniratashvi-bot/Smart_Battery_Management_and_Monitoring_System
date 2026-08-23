@@ -50,50 +50,46 @@ The BMS continuously processes cell voltage data to calculate the average State 
 
 The complete implementation was developed and tested in Wokwi. The potentiometer in the simulation is used to represent changing battery voltage conditions, allowing different operating and fault conditions to be tested without physical battery hardware.
 
-## System Architecture
-
-`
-                 Battery / Sensor Inputs
-                         │
-                         ▼
-               ┌─────────────────────┐
-               │   BMS Data Engine   │
-               │                     │
-               │ Voltage / SoC / SoH │
-               │ Cell Analysis       │
-               │ Imbalance Analysis  │
-               └──────────┬──────────┘
-                          │
-              ┌───────────┴───────────┐
-              ▼                       ▼
-     ┌─────────────────┐     ┌──────────────────┐
-     │ Fault Detection │     │ System State     │
-     │ & Relay Safety  │────►│ State Machine    │
-     └─────────────────┘     │ NORMAL           │
-                             │ DEGRADED         │
-                             │ FAILSAFE         │
-                             │ SHUTDOWN         │
-                             └────────┬─────────┘
-                                      │
-                 ┌────────────────────┼────────────────────┐
-                 ▼                    ▼                    ▼
-        ┌────────────────┐   ┌─────────────────┐   ┌──────────────────┐
-        │   LCD Engine   │   │ Telemetry Engine│   │ Analytics Engine │
-        │ 16x2 I2C LCD   │   │ Event Detection │   │ Risk / Health    │
-        │ Status Pages   │   │ Offline Queue   │   │ Fault Statistics │
-        └────────────────┘   │ Wi-Fi / RSSI    │   │ Recommendations  │
-                             └────────┬────────┘   └────────┬─────────┘
-                                      │                     │
-                                      └──────────┬──────────┘
-                                                 ▼
-                                         ┌──────────────┐
-                                         │ Blynk Cloud  │
-                                         │ Live Monitor │
-                                         │ Trends       │
-                                         │ Dashboard    │
-                                         └──────────────┘
-``
-
+                    Battery / Sensor Inputs
+                            │
+                            ▼
+                  ┌─────────────────────┐
+                  │   BMS Data Engine   │
+                  │                     │
+                  │ Voltage / SoC / SoH │
+                  │ Cell Analysis       │
+                  │ Imbalance Analysis  │
+                  └──────────┬──────────┘
+                             │
+                ┌────────────┴────────────┐
+                ▼                         ▼
+       ┌─────────────────┐       ┌──────────────────┐
+       │ Fault Detection │       │ System State     │
+       │ & Relay Safety  │──────►│ State Machine    │
+       └─────────────────┘       │ NORMAL           │
+                                 │ DEGRADED         │
+                                 │ FAILSAFE         │
+                                 │ SHUTDOWN         │
+                                 └────────┬─────────┘
+                                          │
+              ┌───────────────────────────┼──────────────────────────┐
+              ▼                           ▼                          ▼
+     ┌────────────────┐        ┌─────────────────┐        ┌──────────────────┐
+     │   LCD Engine   │        │ Telemetry Engine│        │ Analytics Engine │
+     │ 16x2 I2C LCD   │        │ Event Detection │        │ Risk / Health    │
+     │ Status Pages   │        │ Offline Queue   │        │ Fault Statistics │
+     │ Fault Display  │        │ Wi-Fi / RSSI    │        │ Recommendations  │
+     └────────────────┘        └────────┬────────┘        └────────┬─────────┘
+                                        │                          │
+                                        └────────────┬─────────────┘
+                                                     ▼
+                                            ┌──────────────┐
+                                            │ Blynk Cloud  │
+                                            │ Live Data    │
+                                            │ Analytics    │
+                                            │ Trends       │
+                                            │ Dashboard    │
+                                            └──────────────┘
 ## Testing and Validation
 
 The complete system was tested in Wokwi under normal operating conditions and during fault and communication scenarios.
